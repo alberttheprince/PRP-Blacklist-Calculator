@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aldore Hospital — Blacklist Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #E63946;
+    --red-dim: #7a1e25;
+    --red-glow: rgba(230,57,70,0.15);
+    --bg: #0a0c0f;
+    --bg2: #111418;
+    --bg3: #181c22;
+    --border: rgba(255,255,255,0.07);
+    --border-red: rgba(230,57,70,0.3);
+    --text: #e8eaed;
+    --text-dim: #6b7280;
+    --text-mid: #9ca3af;
+    --green: #22c55e;
+    --amber: #f59e0b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(230,57,70,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(230,57,70,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 2px;
+    background: var(--red);
+    box-shadow: 0 0 20px var(--red);
+  }
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--red);
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+
+  h1 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  h1 span { color: var(--red); }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+
+  /* Layout */
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  @media (max-width: 700px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+
+  /* Sections */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-header-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--red);
+    box-shadow: 0 0 8px var(--red);
+    flex-shrink: 0;
+  }
+
+  .card-header-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-mid);
+  }
+
+  /* Category */
+  .category { margin-bottom: 1rem; }
+
+  .category-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 0.6rem 1rem;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .offense-list { padding: 0.25rem 0; }
+
+  .offense-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: background 0.1s;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+
+  .offense-item:last-child { border-bottom: none; }
+  .offense-item:hover { background: rgba(255,255,255,0.03); }
+  .offense-item.selected { background: var(--red-glow); }
+
+  .offense-check {
+    width: 16px; height: 16px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+
+  .offense-item.selected .offense-check {
+    background: var(--red);
+    border-color: var(--red);
+  }
+
+  .offense-check svg { display: none; }
+  .offense-item.selected .offense-check svg { display: block; }
+
+  .offense-name {
+    flex: 1;
+    font-size: 13px;
+    color: var(--text-mid);
+    line-height: 1.4;
+  }
+
+  .offense-item.selected .offense-name { color: var(--text); }
+
+  .offense-duration {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--red);
+    white-space: nowrap;
+    font-weight: 500;
+  }
+
+  /* Sidebar */
+  .sidebar { position: sticky; top: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+
+  /* Result */
+  .result-card {
+    background: var(--bg2);
+    border: 1px solid var(--border-red);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .result-display {
+    padding: 1.5rem;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .result-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+  }
+
+  .result-time {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--red);
+    line-height: 1;
+    text-shadow: 0 0 30px rgba(230,57,70,0.4);
+    transition: all 0.3s;
+  }
+
+  .result-unit {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  /* Modifiers */
+  .modifiers { padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+
+  .mod-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .mod-item:hover { border-color: rgba(255,255,255,0.15); }
+  .mod-item.active { border-color: var(--border-red); background: var(--red-glow); }
+
+  .mod-check {
+    width: 16px; height: 16px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+
+  .mod-item.active .mod-check { background: var(--red); border-color: var(--red); }
+  .mod-check svg { display: none; }
+  .mod-item.active .mod-check svg { display: block; }
+
+  .mod-info { flex: 1; }
+  .mod-name { font-size: 13px; font-weight: 500; }
+  .mod-desc { font-size: 11px; color: var(--text-dim); margin-top: 1px; }
+
+  .mod-effect {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--green);
+    white-space: nowrap;
+  }
+
+  /* Breakdown */
+  .breakdown { padding: 1rem; }
+
+  .breakdown-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 0.75rem;
+  }
+
+  .breakdown-empty {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-style: italic;
+    text-align: center;
+    padding: 1rem 0;
+  }
+
+  .breakdown-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 12px;
+    gap: 8px;
+  }
+
+  .breakdown-item:last-child { border-bottom: none; }
+  .breakdown-item-name { color: var(--text-mid); flex: 1; line-height: 1.3; }
+  .breakdown-item-val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  .breakdown-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0 0;
+    margin-top: 0.25rem;
+    border-top: 1px solid var(--border-red);
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .breakdown-total-val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--red);
+    font-weight: 500;
+  }
+
+  .mod-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    padding: 0.3rem 0;
+    color: var(--text-dim);
+  }
+
+  .mod-line-val { font-family: 'IBM Plex Mono', monospace; color: var(--green); }
+
+  /* Reset */
+  .reset-btn {
+    width: 100%;
+    padding: 0.65rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-top: 0.5rem;
+  }
+
+  .reset-btn:hover { border-color: var(--red); color: var(--red); }
+
+  /* Repeat counter */
+  .repeat-counter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+
+  .repeat-label { font-size: 13px; flex: 1; }
+  .repeat-sub { font-size: 11px; color: var(--text-dim); }
+
+  .counter-btns { display: flex; align-items: center; gap: 6px; }
+  .counter-btn {
+    width: 24px; height: 24px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.1s;
+    line-height: 1;
+  }
+  .counter-btn:hover { border-color: var(--red); color: var(--red); }
+  .counter-val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    min-width: 20px;
+    text-align: center;
+    color: var(--red);
+  }
+
+  .scroll-offenses { max-height: 520px; overflow-y: auto; }
+  .scroll-offenses::-webkit-scrollbar { width: 4px; }
+  .scroll-offenses::-webkit-scrollbar-track { background: transparent; }
+  .scroll-offenses::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Aldore Hospital · EMS Division</div>
+    <h1>Blacklist <span>Calculator</span></h1>
+    <p class="subtitle">Select offenses · apply modifiers · get final duration</p>
+  </header>
+
+  <div class="grid">
+
+    <!-- Offense selector -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-dot"></div>
+        <span class="card-header-label">Select Offenses</span>
+      </div>
+      <div class="scroll-offenses" id="offenseList"></div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+
+      <!-- Result -->
+      <div class="result-card">
+        <div class="result-display">
+          <div class="result-label">Total Blacklist Duration</div>
+          <div class="result-time" id="resultTime">0</div>
+          <div class="result-unit" id="resultUnit">no offenses selected</div>
+        </div>
+        <div class="breakdown" id="breakdown">
+          <div class="breakdown-title">Breakdown</div>
+          <div class="breakdown-empty" id="emptyMsg">No offenses selected</div>
+          <div id="breakdownItems"></div>
+        </div>
+      </div>
+
+      <!-- Modifiers -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-header-dot"></div>
+          <span class="card-header-label">Modifiers</span>
+        </div>
+        <div class="modifiers">
+
+          <div class="mod-item" id="mod-first" onclick="toggleMod('first')">
+            <div class="mod-check">
+              <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+            <div class="mod-info">
+              <div class="mod-name">First Offense</div>
+              <div class="mod-desc">No prior blacklists</div>
+            </div>
+            <div class="mod-effect">÷ 2</div>
+          </div>
+
+          <div class="mod-item" id="mod-rare" onclick="toggleMod('rare')">
+            <div class="mod-check">
+              <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+            <div class="mod-info">
+              <div class="mod-name">Rare Offense</div>
+              <div class="mod-desc">No ban in 2+ months</div>
+            </div>
+            <div class="mod-effect">÷ 4</div>
+          </div>
+
+          <div class="repeat-counter">
+            <div>
+              <div class="repeat-label">Repeat Offender</div>
+              <div class="repeat-sub">+1 hr per additional incident</div>
+            </div>
+            <div class="counter-btns">
+              <button class="counter-btn" onclick="changeRepeat(-1)">−</button>
+              <div class="counter-val" id="repeatVal">0</div>
+              <button class="counter-btn" onclick="changeRepeat(1)">+</button>
+            </div>
+          </div>
+
+          <button class="reset-btn" onclick="resetAll()">Reset All</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const MINS = 1;
+const HRS = 60;
+const DAYS = 1440;
+
+const offenses = [
+  { cat: "Actions Against EMS Personnel", items: [
+    { name: "Bomb / Arson Threats", dur: 6*HRS, label: "6 hrs" },
+    { name: "Arson w/ No Casualty or Fatality", dur: 2*DAYS, label: "2 days" },
+    { name: "Bomb w/ No Casualty or Fatality", dur: 2*DAYS, label: "2 days" },
+    { name: "Arson w/ Casualty or Fatality", dur: 3*DAYS, label: "3 days" },
+    { name: "Bomb w/ Casualty or Fatality", dur: 3*DAYS, label: "3 days" },
+    { name: "Shooting at EMS w/ Class 3 Weapon", dur: 3*DAYS, label: "3 days" },
+    { name: "Shooting at EMS w/ Class 2 Weapon", dur: 2*DAYS, label: "2 days" },
+    { name: "Shooting at EMS w/ Class 1 Weapon", dur: 24*HRS, label: "24 hrs" },
+    { name: "Assaulting EMS with a Melee", dur: 24*HRS, label: "24 hrs" },
+    { name: "Any Action Causing Casualty / Fatality of EMS", dur: 24*HRS, label: "24 hrs" },
+    { name: "Kidnapping / Hostage of EMS", dur: 12*HRS, label: "12 hrs" },
+    { name: "Assaulting (Fighting) EMS — K.O.", dur: 12*HRS, label: "12 hrs" },
+    { name: "Cop Baiting (e.g. Donuts in Parking Lot)", dur: 6*HRS, label: "6 hrs" },
+    { name: "Hurting EMS (Battery)", dur: 6*HRS, label: "6 hrs" },
+  ]},
+  { cat: "Actions on Hospital Property", items: [
+    { name: "Shooting on Property w/ Class 3 Weapon", dur: 3*DAYS, label: "3 days" },
+    { name: "Shooting on Property w/ Class 2 Weapon", dur: 2*DAYS, label: "2 days" },
+    { name: "Shooting on Property w/ Class 1 Weapon", dur: 24*HRS, label: "24 hrs" },
+    { name: "Assaulting Non-Gov. with a Melee", dur: 24*HRS, label: "24 hrs" },
+    { name: "Kidnapping / Hostage of Non-Gov.", dur: 6*HRS, label: "6 hrs" },
+    { name: "Vocal Harassment (Unwanted Flirting)", dur: 1*HRS, label: "1 hr" },
+    { name: "Physical Harassment (Tackling, Kicking)", dur: 2*HRS, label: "2 hrs" },
+    { name: "Fighting w/ or w/o K.O.", dur: 6*HRS, label: "6 hrs" },
+    { name: "Fighting w/ Casualty or Fatality", dur: 24*HRS, label: "24 hrs" },
+    { name: "Spamming 911E for No Reason", dur: 1*HRS, label: "1 hr" },
+    { name: "Robbing EMS", dur: 6*HRS, label: "6 hrs" },
+    { name: "Siphoning Gas from EMS (Terrorism)", dur: 6*HRS, label: "6 hrs" },
+    { name: "Slashing Tires (Terrorism)", dur: 6*HRS, label: "6 hrs" },
+    { name: "Blocking EMS Vehicles (Terrorism)", dur: 6*HRS, label: "6 hrs" },
+    { name: "Vehicle Harassment (Terrorism)", dur: 6*HRS, label: "6 hrs" },
+    { name: "Any Harassment on Patients", dur: 2*HRS, label: "2 hrs" },
+    { name: "EMS Baiting / Trap", dur: 6*HRS, label: "6 hrs" },
+    { name: "Loitering (excl. Food Vendors)", dur: 30*MINS, label: "30 mins" },
+    { name: "Falsifying Injuries", dur: 30*MINS, label: "30 mins" },
+    { name: "Brandishing Weapons (Threat)", dur: 1*HRS, label: "1 hr" },
+    { name: "Not Following EMS Orders", dur: 1*HRS, label: "1 hr" },
+    { name: "Siphoning Gas from Non-Gov.", dur: 2*HRS, label: "2 hrs" },
+    { name: "Selling Drugs or Weapons on Property", dur: 2*HRS, label: "2 hrs" },
+    { name: "Non-Gov. Entering Restricted Areas", dur: 30*MINS, label: "30 mins" },
+    { name: "Unpeaceful Protesting", dur: 2*HRS, label: "2 hrs" },
+    { name: "Hostile Riot", dur: 24*HRS, label: "24 hrs" },
+    { name: "Interfering Code Pink — Non Lethal Threat", dur: 2*HRS, label: "2 hrs" },
+    { name: "Interfering Code Pink — Lethal Threat", dur: 8*HRS, label: "8 hrs" },
+  ]},
+];
+
+const selected = new Set();
+const mods = { first: false, rare: false };
+let repeatCount = 0;
+
+function formatDuration(mins) {
+  if (mins === 0) return { val: '0', unit: 'no offenses selected' };
+  if (mins < 60) return { val: mins, unit: mins === 1 ? 'minute' : 'minutes' };
+  if (mins < 1440) {
+    const h = mins / 60;
+    const rounded = Math.round(h * 10) / 10;
+    return { val: rounded % 1 === 0 ? rounded : rounded.toFixed(1), unit: rounded === 1 ? 'hour' : 'hours' };
+  }
+  const d = mins / 1440;
+  const rounded = Math.round(d * 10) / 10;
+  return { val: rounded % 1 === 0 ? rounded : rounded.toFixed(1), unit: rounded === 1 ? 'day' : 'days' };
+}
+
+function formatLabel(mins) {
+  if (mins < 60) return `${mins} min`;
+  if (mins < 1440) {
+    const h = mins / 60;
+    return `${Math.round(h * 10) / 10} hr${h !== 1 ? 's' : ''}`;
+  }
+  const d = mins / 1440;
+  return `${Math.round(d * 10) / 10} day${d !== 1 ? 's' : ''}`;
+}
+
+function toggleOffense(id) {
+  if (selected.has(id)) selected.delete(id);
+  else selected.add(id);
+  document.getElementById('offense-' + id).classList.toggle('selected', selected.has(id));
+  recalc();
+}
+
+function toggleMod(key) {
+  if (key === 'first' && !mods.first) mods.rare = false;
+  if (key === 'rare' && !mods.rare) mods.first = false;
+  mods[key] = !mods[key];
+  document.getElementById('mod-first').classList.toggle('active', mods.first);
+  document.getElementById('mod-rare').classList.toggle('active', mods.rare);
+  recalc();
+}
+
+function changeRepeat(delta) {
+  repeatCount = Math.max(0, repeatCount + delta);
+  document.getElementById('repeatVal').textContent = repeatCount;
+  recalc();
+}
+
+function recalc() {
+  const items = [];
+  offenses.forEach((cat, ci) => {
+    cat.items.forEach((off, oi) => {
+      const id = `${ci}-${oi}`;
+      if (selected.has(id)) items.push(off);
+    });
+  });
+
+  let base = items.reduce((sum, i) => sum + i.dur, 0);
+  let final = base;
+  const repeatAdd = repeatCount * 60;
+
+  if (mods.first) final = Math.ceil(final / 2);
+  else if (mods.rare) final = Math.ceil(final * 0.75);
+  final += repeatAdd;
+
+  const fmt = formatDuration(final);
+  document.getElementById('resultTime').textContent = fmt.val;
+  document.getElementById('resultUnit').textContent = fmt.unit;
+
+  const breakdownItems = document.getElementById('breakdownItems');
+  const emptyMsg = document.getElementById('emptyMsg');
+
+  if (items.length === 0) {
+    emptyMsg.style.display = 'block';
+    breakdownItems.innerHTML = '';
+    return;
+  }
+
+  emptyMsg.style.display = 'none';
+  let html = '';
+
+  items.forEach(i => {
+    html += `<div class="breakdown-item">
+      <span class="breakdown-item-name">${i.name}</span>
+      <span class="breakdown-item-val">${i.label}</span>
+    </div>`;
+  });
+
+  if (mods.first) {
+    html += `<div class="mod-line"><span>First offense (÷2)</span><span class="mod-line-val">−${formatLabel(base - Math.ceil(base/2))}</span></div>`;
+  } else if (mods.rare) {
+    html += `<div class="mod-line"><span>Rare offense (÷4 of base)</span><span class="mod-line-val">−${formatLabel(base - Math.ceil(base*0.75))}</span></div>`;
+  }
+
+  if (repeatCount > 0) {
+    html += `<div class="mod-line"><span>Repeat offender ×${repeatCount}</span><span class="mod-line-val" style="color:var(--red)">+${formatLabel(repeatAdd)}</span></div>`;
+  }
+
+  html += `<div class="breakdown-total">
+    <span>Total</span>
+    <span class="breakdown-total-val">${formatLabel(final)}</span>
+  </div>`;
+
+  breakdownItems.innerHTML = html;
+}
+
+function resetAll() {
+  selected.clear();
+  mods.first = false;
+  mods.rare = false;
+  repeatCount = 0;
+  document.getElementById('repeatVal').textContent = '0';
+  document.getElementById('mod-first').classList.remove('active');
+  document.getElementById('mod-rare').classList.remove('active');
+  document.querySelectorAll('.offense-item').forEach(el => el.classList.remove('selected'));
+  recalc();
+}
+
+// Build offense list
+const list = document.getElementById('offenseList');
+offenses.forEach((cat, ci) => {
+  const catDiv = document.createElement('div');
+  catDiv.className = 'category';
+  catDiv.innerHTML = `<div class="category-title">${cat.cat}</div><div class="offense-list"></div>`;
+  const ol = catDiv.querySelector('.offense-list');
+
+  cat.items.forEach((off, oi) => {
+    const id = `${ci}-${oi}`;
+    const item = document.createElement('div');
+    item.className = 'offense-item';
+    item.id = 'offense-' + id;
+    item.onclick = () => toggleOffense(id);
+    item.innerHTML = `
+      <div class="offense-check">
+        <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </div>
+      <span class="offense-name">${off.name}</span>
+      <span class="offense-duration">${off.label}</span>
+    `;
+    ol.appendChild(item);
+  });
+
+  list.appendChild(catDiv);
+});
+</script>
+</body>
+</html>
