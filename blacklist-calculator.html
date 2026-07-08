@@ -433,6 +433,65 @@
     color: var(--red);
   }
 
+  .search-wrap {
+    position: relative;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 1.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-dim);
+    pointer-events: none;
+  }
+
+  .search-input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.5rem 2rem 0.5rem 2.1rem;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .search-input::placeholder { color: var(--text-dim); }
+  .search-input:focus { border-color: var(--border-red); }
+
+  .search-clear {
+    position: absolute;
+    right: 1.6rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+  }
+
+  .search-clear:hover { color: var(--red); }
+
+  .no-results {
+    padding: 2rem 1rem;
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+
+  .category.hidden { display: none; }
+  .offense-item.hidden { display: none; }
+
   .scroll-offenses { max-height: 520px; overflow-y: auto; }
   .scroll-offenses::-webkit-scrollbar { width: 4px; }
   .scroll-offenses::-webkit-scrollbar-track { background: transparent; }
@@ -456,7 +515,13 @@
         <div class="card-header-dot"></div>
         <span class="card-header-label">Select Offenses</span>
       </div>
+      <div class="search-wrap">
+        <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="searchInput" class="search-input" placeholder="Search offenses…" oninput="filterOffenses()">
+        <button id="searchClear" class="search-clear" onclick="clearSearch()" style="display:none;">✕</button>
+      </div>
       <div class="scroll-offenses" id="offenseList"></div>
+      <div class="no-results" id="noResults" style="display:none;">No offenses match your search</div>
     </div>
 
     <!-- Sidebar -->
@@ -765,11 +830,38 @@ offenses.forEach((cat, ci) => {
       </div>
       <span class="offense-duration">${off.label}</span>
     `;
+    item.dataset.search = (off.name + ' ' + exampleText).toLowerCase();
     ol.appendChild(item);
   });
 
   list.appendChild(catDiv);
 });
+
+function filterOffenses() {
+  const query = document.getElementById('searchInput').value.trim().toLowerCase();
+  document.getElementById('searchClear').style.display = query ? 'block' : 'none';
+
+  let anyVisible = false;
+
+  document.querySelectorAll('.category').forEach(catDiv => {
+    let catHasVisible = false;
+    catDiv.querySelectorAll('.offense-item').forEach(item => {
+      const matches = !query || item.dataset.search.includes(query);
+      item.classList.toggle('hidden', !matches);
+      if (matches) { catHasVisible = true; anyVisible = true; }
+    });
+    catDiv.classList.toggle('hidden', !catHasVisible);
+  });
+
+  document.getElementById('noResults').style.display = anyVisible ? 'none' : 'block';
+}
+
+function clearSearch() {
+  const input = document.getElementById('searchInput');
+  input.value = '';
+  input.focus();
+  filterOffenses();
+}
 </script>
 </body>
 </html>
