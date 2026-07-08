@@ -166,7 +166,7 @@
 
   .offense-item {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 10px;
     padding: 0.5rem 1rem;
     cursor: pointer;
@@ -187,6 +187,7 @@
     align-items: center;
     justify-content: center;
     transition: all 0.15s;
+    margin-top: 2px;
   }
 
   .offense-item.selected .offense-check {
@@ -197,8 +198,9 @@
   .offense-check svg { display: none; }
   .offense-item.selected .offense-check svg { display: block; }
 
+  .offense-body { flex: 1; min-width: 0; }
+
   .offense-name {
-    flex: 1;
     font-size: 13px;
     color: var(--text-mid);
     line-height: 1.4;
@@ -206,12 +208,21 @@
 
   .offense-item.selected .offense-name { color: var(--text); }
 
+  .offense-examples {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.4;
+    margin-top: 2px;
+    font-style: italic;
+  }
+
   .offense-duration {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 11px;
     color: var(--red);
     white-space: nowrap;
     font-weight: 500;
+    margin-top: 2px;
   }
 
   /* Sidebar */
@@ -521,51 +532,92 @@ const HRS = 60;
 const DAYS = 1440;
 
 const offenses = [
-  { cat: "Actions Against EMS Personnel", items: [
-    { name: "Bomb / Arson Threats", dur: 6*HRS, label: "6 hrs" },
-    { name: "Arson w/ No Casualty or Fatality", dur: 2*DAYS, label: "2 days" },
-    { name: "Bomb w/ No Casualty or Fatality", dur: 2*DAYS, label: "2 days" },
-    { name: "Arson w/ Casualty or Fatality", dur: 3*DAYS, label: "3 days" },
-    { name: "Bomb w/ Casualty or Fatality", dur: 3*DAYS, label: "3 days" },
-    { name: "Shooting at EMS w/ Class 3 Weapon", dur: 3*DAYS, label: "3 days" },
-    { name: "Shooting at EMS w/ Class 2 Weapon", dur: 2*DAYS, label: "2 days" },
-    { name: "Shooting at EMS w/ Class 1 Weapon", dur: 24*HRS, label: "24 hrs" },
-    { name: "Assaulting EMS with a Melee", dur: 24*HRS, label: "24 hrs" },
-    { name: "Any Action Causing Casualty / Fatality of EMS", dur: 24*HRS, label: "24 hrs" },
-    { name: "Kidnapping / Hostage of EMS", dur: 12*HRS, label: "12 hrs" },
-    { name: "Assaulting (Fighting) EMS — K.O.", dur: 12*HRS, label: "12 hrs" },
-    { name: "Cop Baiting (e.g. Donuts in Parking Lot)", dur: 6*HRS, label: "6 hrs" },
-    { name: "Hurting EMS (Battery)", dur: 6*HRS, label: "6 hrs" },
+  { cat: "Violent Crimes", items: [
+    { name: "Murder / Attempted Murder", dur: 5*DAYS, label: "5 days",
+      examples: ["shooting to kill a staff member or patient", "any attack meant to be lethal"] },
+    { name: "Aggravated Mayhem", dur: 3*DAYS, label: "3 days",
+      examples: ["a deliberate attack meant to permanently maim or disfigure"] },
+    { name: "Arson (Great Bodily Injury)", dur: 3*DAYS, label: "3 days",
+      examples: ["setting a fire in an occupied room"] },
+    { name: "Assault with a Deadly Weapon", dur: 2*DAYS, label: "2 days",
+      examples: ["shooting or stabbing someone without killing them"] },
+    { name: "Kidnapping", dur: 12*HRS, label: "12 hrs",
+      examples: ["restraining and moving someone against their will"] },
+    { name: "False Imprisonment", dur: 6*HRS, label: "6 hrs",
+      examples: ["locking someone in a room or holding them against their will"] },
+    { name: "Battery on a Custodial/Medical Officer", dur: 6*HRS, label: "6 hrs",
+      examples: ["punching, shoving, or slapping a staff member"] },
+    { name: "Battery", dur: 4*HRS, label: "4 hrs",
+      examples: ["punching, shoving, or slapping any person"] },
+    { name: "Assault", dur: 2*HRS, label: "2 hrs",
+      examples: ["a swing that doesn't connect, a scuffle with no injury"] },
   ]},
-  { cat: "Actions on Hospital Property", items: [
-    { name: "Shooting on Property w/ Class 3 Weapon", dur: 3*DAYS, label: "3 days" },
-    { name: "Shooting on Property w/ Class 2 Weapon", dur: 2*DAYS, label: "2 days" },
-    { name: "Shooting on Property w/ Class 1 Weapon", dur: 24*HRS, label: "24 hrs" },
-    { name: "Assaulting Non-Gov. with a Melee", dur: 24*HRS, label: "24 hrs" },
-    { name: "Kidnapping / Hostage of Non-Gov.", dur: 6*HRS, label: "6 hrs" },
-    { name: "Vocal Harassment (Unwanted Flirting)", dur: 1*HRS, label: "1 hr" },
-    { name: "Physical Harassment (Tackling, Kicking)", dur: 2*HRS, label: "2 hrs" },
-    { name: "Fighting w/ or w/o K.O.", dur: 6*HRS, label: "6 hrs" },
-    { name: "Fighting w/ Casualty or Fatality", dur: 24*HRS, label: "24 hrs" },
-    { name: "Spamming 911E for No Reason", dur: 1*HRS, label: "1 hr" },
-    { name: "Robbing EMS", dur: 6*HRS, label: "6 hrs" },
-    { name: "Siphoning Gas from EMS (Terrorism)", dur: 6*HRS, label: "6 hrs" },
-    { name: "Slashing Tires (Terrorism)", dur: 6*HRS, label: "6 hrs" },
-    { name: "Blocking EMS Vehicles (Terrorism)", dur: 6*HRS, label: "6 hrs" },
-    { name: "Vehicle Harassment (Terrorism)", dur: 6*HRS, label: "6 hrs" },
-    { name: "Any Harassment on Patients", dur: 2*HRS, label: "2 hrs" },
-    { name: "EMS Baiting / Trap", dur: 6*HRS, label: "6 hrs" },
-    { name: "Loitering (excl. Food Vendors)", dur: 30*MINS, label: "30 mins" },
-    { name: "Falsifying Injuries", dur: 30*MINS, label: "30 mins" },
-    { name: "Brandishing Weapons (Threat)", dur: 1*HRS, label: "1 hr" },
-    { name: "Not Following EMS Orders", dur: 1*HRS, label: "1 hr" },
-    { name: "Siphoning Gas from Non-Gov.", dur: 2*HRS, label: "2 hrs" },
-    { name: "Selling Drugs or Weapons on Property", dur: 2*HRS, label: "2 hrs" },
-    { name: "Non-Gov. Entering Restricted Areas", dur: 30*MINS, label: "30 mins" },
-    { name: "Unpeaceful Protesting", dur: 2*HRS, label: "2 hrs" },
-    { name: "Hostile Riot", dur: 24*HRS, label: "24 hrs" },
-    { name: "Interfering Code Pink — Non Lethal Threat", dur: 2*HRS, label: "2 hrs" },
-    { name: "Interfering Code Pink — Lethal Threat", dur: 8*HRS, label: "8 hrs" },
+
+  { cat: "Weapons Offenses", items: [
+    { name: "Shooting at an Occupied Structure", dur: 2*DAYS, label: "2 days",
+      examples: ["firing a gun into or inside the hospital building"] },
+    { name: "Discharge of a Firearm at Persons", dur: 2*DAYS, label: "2 days",
+      examples: ["firing a weapon at a person, missing"] },
+    { name: "Grossly Negligent Discharge of a Firearm", dur: 24*HRS, label: "24 hrs",
+      examples: ["firing a weapon into the air or ground on property"] },
+    { name: "Brandishing a Weapon", dur: 2*HRS, label: "2 hrs",
+      examples: ["pulling a gun or knife without firing or swinging it"] },
+    { name: "Possession of a Firearm on Restricted Grounds", dur: 1*HRS, label: "1 hr",
+      examples: ["carrying a visible weapon into a posted no-weapons zone"] },
+  ]},
+
+  { cat: "Terrorism & Public Safety", items: [
+    { name: "Use of a Weapon of Mass Destruction", dur: 3*DAYS, label: "3 days",
+      examples: ["detonating a bomb or explosive device on the property"] },
+    { name: "Criminal Threats", dur: 1*DAYS, label: "1 day",
+      examples: ["threatening to bomb, shoot up, or burn down the building"] },
+    { name: "Rioting", dur: 24*HRS, label: "24 hrs",
+      examples: ["organizing or joining a violent crowd on the property"] },
+    { name: "Disrupting a Public Meeting/Assembly", dur: 4*HRS, label: "4 hrs",
+      examples: ["forcibly disrupting a briefing, meeting, or gathering on-site"] },
+    { name: "False Report of an Emergency", dur: 1*HRS, label: "1 hr",
+      examples: ["calling in a fake bomb threat or fake 911 call"] },
+  ]},
+
+  { cat: "Property Crimes", items: [
+    { name: "Arson (No Injury)", dur: 2*DAYS, label: "2 days",
+      examples: ["torching an empty vehicle or storage room"] },
+    { name: "Robbery", dur: 12*HRS, label: "12 hrs",
+      examples: ["taking property or cash by force or threat"] },
+    { name: "Grand Theft", dur: 6*HRS, label: "6 hrs",
+      examples: ["stealing a vehicle or high-value equipment"] },
+    { name: "Vandalism", dur: 4*HRS, label: "4 hrs",
+      examples: ["slashing tires, smashing windows, spray-painting property"] },
+    { name: "Petty Theft", dur: 2*HRS, label: "2 hrs",
+      examples: ["siphoning gas", "pocketing small items from a room"] },
+  ]},
+
+  { cat: "Obstruction & Public Order", items: [
+    { name: "Obstructing/Delaying Emergency Personnel", dur: 6*HRS, label: "6 hrs",
+      examples: ["blocking an ambulance from leaving", "getting in a medic's way mid-response"] },
+    { name: "Resisting an Officer by Threat/Violence", dur: 4*HRS, label: "4 hrs",
+      examples: ["shoving or threatening security/staff enforcing an order"] },
+    { name: "Failure to Comply with Lawful Orders", dur: 2*HRS, label: "2 hrs",
+      examples: ["refusing to leave when told to by staff or security"] },
+    { name: "Disturbing the Peace", dur: 1*HRS, label: "1 hr",
+      examples: ["shouting, causing a scene, escalating an argument in the lobby"] },
+    { name: "Unlawful Assembly", dur: 2*HRS, label: "2 hrs",
+      examples: ["a group gathering with intent to commit disorderly acts"] },
+    { name: "Criminal Trespass", dur: 30*MINS, label: "30 mins",
+      examples: ["entering a staff-only or restricted area"] },
+    { name: "Loitering", dur: 30*MINS, label: "30 mins",
+      examples: ["hanging around with no reason after being asked to leave"] },
+  ]},
+
+  { cat: "Fraud & Harassment", items: [
+    { name: "Insurance/Medical Fraud", dur: 2*HRS, label: "2 hrs",
+      examples: ["faking an injury or symptoms to get treatment or attention"] },
+    { name: "Annoying/Molesting Conduct (Harassment)", dur: 4*HRS, label: "4 hrs",
+      examples: ["unwanted advances or comments after being told to stop"] },
+    { name: "Impersonating Emergency Personnel", dur: 6*HRS, label: "6 hrs",
+      examples: ["posing as a medic, doctor, or officer"] },
+    { name: "Stalking", dur: 8*HRS, label: "8 hrs",
+      examples: ["repeatedly following or surveilling a staff member or patient"] },
   ]},
 ];
 
@@ -702,11 +754,15 @@ offenses.forEach((cat, ci) => {
     item.className = 'offense-item';
     item.id = 'offense-' + id;
     item.onclick = () => toggleOffense(id);
+    const exampleText = off.examples && off.examples.length ? off.examples.join(' · ') : '';
     item.innerHTML = `
       <div class="offense-check">
         <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
       </div>
-      <span class="offense-name">${off.name}</span>
+      <div class="offense-body">
+        <div class="offense-name">${off.name}</div>
+        ${exampleText ? `<div class="offense-examples">${exampleText}</div>` : ''}
+      </div>
       <span class="offense-duration">${off.label}</span>
     `;
     ol.appendChild(item);
