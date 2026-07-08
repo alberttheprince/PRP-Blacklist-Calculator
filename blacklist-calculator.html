@@ -493,6 +493,96 @@
   .offense-item.hidden { display: none; }
 
   .scroll-offenses { max-height: 520px; overflow-y: auto; }
+
+  /* Custom modifier */
+  .custom-mod-section {
+    padding-top: 0.25rem;
+    border-top: 1px solid var(--border);
+    margin-top: 0.25rem;
+  }
+
+  .custom-mod-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin: 0.5rem 0 0.5rem;
+  }
+
+  .custom-mod-row {
+    display: flex;
+    gap: 6px;
+  }
+
+  .custom-mod-input {
+    flex: 1;
+    min-width: 0;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.5rem 0.6rem;
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .custom-mod-input::placeholder { color: var(--text-dim); }
+  .custom-mod-input:focus { border-color: var(--border-red); }
+
+  .custom-mod-add {
+    background: var(--red-glow);
+    border: 1px solid var(--border-red);
+    border-radius: 6px;
+    color: var(--red);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    padding: 0 0.9rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .custom-mod-add:hover { background: var(--red); color: #fff; }
+
+  .custom-mod-error {
+    font-size: 11px;
+    color: var(--red);
+    margin-top: 6px;
+  }
+
+  .custom-mod-list-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.4rem 0.6rem;
+    margin-top: 6px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+
+  .custom-mod-expr {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+    flex: 1;
+  }
+
+  .custom-mod-remove {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 2px 4px;
+    line-height: 1;
+  }
+
+  .custom-mod-remove:hover { color: var(--red); }
   .scroll-offenses::-webkit-scrollbar { width: 4px; }
   .scroll-offenses::-webkit-scrollbar-track { background: transparent; }
   .scroll-offenses::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
@@ -581,6 +671,16 @@
               <div class="counter-val" id="repeatVal">0</div>
               <button class="counter-btn" onclick="changeRepeat(1)">+</button>
             </div>
+          </div>
+
+          <div class="custom-mod-section">
+            <div class="custom-mod-label">Custom Adjustment</div>
+            <div class="custom-mod-row">
+              <input type="text" id="customModInput" class="custom-mod-input" placeholder="e.g. +2d, -6hrs, /3, *2" onkeydown="if(event.key==='Enter') addCustomMod()">
+              <button class="custom-mod-add" onclick="addCustomMod()">Add</button>
+            </div>
+            <div class="custom-mod-error" id="customModError" style="display:none;"></div>
+            <div id="customModList"></div>
           </div>
 
           <button class="reset-btn" onclick="resetAll()">Reset All</button>
@@ -689,6 +789,7 @@ const offenses = [
 const selected = new Set();
 const mods = { first: false, rare: false };
 let repeatCount = 0;
+let customMods = []; // { raw, op, value, unit }
 
 function formatDuration(mins) {
   if (mins === 0) return { val: '0', unit: 'no offenses selected' };
@@ -735,6 +836,68 @@ function changeRepeat(delta) {
   recalc();
 }
 
+const UNIT_TO_MINS = {
+  m: 1, min: 1, mins: 1, minute: 1, minutes: 1,
+  h: 60, hr: 60, hrs: 60, hour: 60, hours: 60,
+  d: 1440, day: 1440, days: 1440,
+};
+
+function parseCustomMod(raw) {
+  const cleaned = raw.trim().toLowerCase().replace(/\s+/g, '');
+  const match = cleaned.match(/^([+\-*/])(\d+(?:\.\d+)?)([a-z]*)$/);
+  if (!match) return null;
+
+  const [, op, numStr, unitStr] = match;
+  const value = parseFloat(numStr);
+  if (isNaN(value) || value <= 0) return null;
+
+  if (op === '*' || op === '/') {
+    if (unitStr) return null; // multiply/divide take a plain number, no unit
+    if (op === '/' && value === 0) return null;
+    return { raw: raw.trim(), op, value, unit: null };
+  }
+
+  // + or - require a time unit
+  const unit = unitStr || 'h'; // default to hours if omitted
+  if (!(unit in UNIT_TO_MINS)) return null;
+  const mins = value * UNIT_TO_MINS[unit];
+  return { raw: raw.trim(), op, value, unit, mins };
+}
+
+function addCustomMod() {
+  const input = document.getElementById('customModInput');
+  const errorEl = document.getElementById('customModError');
+  const parsed = parseCustomMod(input.value);
+
+  if (!parsed) {
+    errorEl.textContent = 'Try formats like +2d, -6hrs, /3, *2';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  errorEl.style.display = 'none';
+  customMods.push(parsed);
+  input.value = '';
+  renderCustomMods();
+  recalc();
+}
+
+function removeCustomMod(index) {
+  customMods.splice(index, 1);
+  renderCustomMods();
+  recalc();
+}
+
+function renderCustomMods() {
+  const list = document.getElementById('customModList');
+  list.innerHTML = customMods.map((m, i) => `
+    <div class="custom-mod-list-item">
+      <span class="custom-mod-expr">${m.raw}</span>
+      <button class="custom-mod-remove" onclick="removeCustomMod(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
 function recalc() {
   const items = [];
   offenses.forEach((cat, ci) => {
@@ -751,6 +914,14 @@ function recalc() {
   if (mods.first) final = Math.ceil(final / 2);
   else if (mods.rare) final = Math.ceil(final * 0.75);
   final += repeatAdd;
+
+  customMods.forEach(m => {
+    if (m.op === '+') final += m.mins;
+    else if (m.op === '-') final -= m.mins;
+    else if (m.op === '*') final = Math.ceil(final * m.value);
+    else if (m.op === '/') final = Math.ceil(final / m.value);
+  });
+  final = Math.max(0, final);
 
   const fmt = formatDuration(final);
   document.getElementById('resultTime').textContent = fmt.val;
@@ -785,6 +956,12 @@ function recalc() {
     html += `<div class="mod-line"><span>Repeat offender ×${repeatCount}</span><span class="mod-line-val" style="color:var(--red)">+${formatLabel(repeatAdd)}</span></div>`;
   }
 
+  customMods.forEach(m => {
+    const color = (m.op === '+' || m.op === '*') ? 'var(--red)' : 'var(--green)';
+    const label = (m.op === '*' || m.op === '/') ? `${m.op} ${m.value}` : `${m.op} ${formatLabel(m.mins)}`;
+    html += `<div class="mod-line"><span>Custom: ${m.raw}</span><span class="mod-line-val" style="color:${color}">${label}</span></div>`;
+  });
+
   html += `<div class="breakdown-total">
     <span>Total</span>
     <span class="breakdown-total-val">${formatLabel(final)}</span>
@@ -798,6 +975,8 @@ function resetAll() {
   mods.first = false;
   mods.rare = false;
   repeatCount = 0;
+  customMods = [];
+  renderCustomMods();
   document.getElementById('repeatVal').textContent = '0';
   document.getElementById('mod-first').classList.remove('active');
   document.getElementById('mod-rare').classList.remove('active');
